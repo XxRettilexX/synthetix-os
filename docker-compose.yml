@@ -1,0 +1,70 @@
+version: "3.8"
+
+services:
+  # FastAPI Backend
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: synthetix-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./shared_storage:/app/storage
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://synthetix:synthetix_password@postgres:5432/synthetix_logs
+      - REDIS_URL=redis://redis:6379/0
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - TAILSCALE_IP=${TAILSCALE_IP}
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - synthetix-network
+
+  # PostgreSQL per log ad alta frequenza
+  postgres:
+    image: postgres:16-alpine
+    container_name: synthetix-postgres
+    environment:
+      - POSTGRES_USER=synthetix
+      - POSTGRES_PASSWORD=synthetix_password
+      - POSTGRES_DB=synthetix_logs
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_local_db.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - synthetix-network
+
+  # Redis per stato Realtime (opzionale)
+  redis:
+    image: redis:7-alpine
+    container_name: synthetix-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    networks:
+      - synthetix-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  shared_storage:
+    driver: local
+
+networks:
+  synthetix-network:
+    driver: bridge
