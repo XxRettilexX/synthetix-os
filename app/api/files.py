@@ -44,7 +44,7 @@ async def upload_file(
         checksum = hashlib.sha256(contents).hexdigest()
         
         # TODO: Ottenere user_id dal token
-        user_id = "temp-user-id"
+        user_id = "00000000-0000-0000-0000-000000000000"
         
         # Salva il file localmente (simula cloud storage)
         os.makedirs(f"{STORAGE_PATH}/{user_id}", exist_ok=True)

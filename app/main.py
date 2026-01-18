@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from supabase import create_client
 from contextlib import asynccontextmanager
 import os
@@ -97,5 +98,81 @@ async def root():
         "message": "Synthetix OS API",
         "version": "1.0.0",
         "status": "running",
-        "docs": "/docs"
+        "docs": "/docs",
+        "ui": "/ui"
     }
+
+
+@app.get("/ui", response_class=HTMLResponse)
+async def api_ui():
+    """Dynamic UI to list all available API endpoints"""
+    routes_html = ""
+    
+    # Sort routes by path
+    sorted_routes = sorted(app.routes, key=lambda x: getattr(x, "path", ""))
+    
+    for route in sorted_routes:
+        # Skip internal or heartbeat routes if desired, but here we show relevant ones
+        if hasattr(route, "methods") and hasattr(route, "path"):
+            methods = ", ".join(route.methods)
+            path = route.path
+            
+            # Get description from docstring or summary
+            description = getattr(route, "description", None)
+            if not description and hasattr(route, "endpoint"):
+                description = route.endpoint.__doc__ or "No description available."
+            
+            # Use the first method for styling color
+            primary_method = list(route.methods)[0] if route.methods else "GET"
+            
+            routes_html += f"""
+            <div class="endpoint">
+                <span class="method {primary_method}">{methods}</span>
+                <span class="path">{path}</span>
+                <div class="description">{description.strip()}</div>
+            </div>
+            """
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>Synthetix OS API Explorer</title>
+            <style>
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f4f7f6; }}
+                h1 {{ color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }}
+                .endpoint {{ background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; }}
+                .endpoint:hover {{ transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }}
+                .method {{ display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8em; margin-right: 10px; color: #fff; min-width: 60px; text-align: center; }}
+                .GET {{ background-color: #61affe; }}
+                .POST {{ background-color: #49cc90; }}
+                .PUT {{ background-color: #fca130; }}
+                .DELETE {{ background-color: #f93e3e; }}
+                .PATCH {{ background-color: #50e3c2; }}
+                .path {{ font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #2980b9; font-size: 1.1em; }}
+                .description {{ margin-top: 8px; color: #666; font-size: 0.95em; white-space: pre-wrap; }}
+                .footer {{ margin-top: 50px; text-align: center; font-size: 0.8em; color: #95a5a6; }}
+                .header-info {{ margin-bottom: 30px; padding: 10px; background: #e8f4fd; border-left: 5px solid #3498db; border-radius: 4px; }}
+            </style>
+        </head>
+        <body>
+            <h1>🚀 Synthetix OS API Explorer</h1>
+            <div class="header-info">
+                <strong>Versione:</strong> 1.0.0 | 
+                <strong>Status:</strong> Running | 
+                <strong>Auto-Refresh:</strong> Attivo (Questa pagina si aggiorna dinamicamente in base alle rotte del codice)
+            </div>
+            
+            <div id="endpoints-container">
+                {routes_html}
+            </div>
+
+            <div class="footer">
+                Synthetix OS - Generato automaticamente dal sistema
+            </div>
+        </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
+

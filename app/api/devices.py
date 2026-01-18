@@ -34,7 +34,7 @@ async def create_device(
     try:
         # TODO: Ottenere user_id dal token di autenticazione
         device_data = device.model_dump()
-        device_data["user_id"] = "temp-user-id"  # Placeholder
+        device_data["user_id"] = "00000000-0000-0000-0000-000000000000"  # UUID Placeholder
         device_data["created_at"] = datetime.utcnow().isoformat()
         
         result = supabase.table("devices").insert(device_data).execute()
