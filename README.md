@@ -1,6 +1,57 @@
 # Synthetix OS - Homelab Backend
 
-Sistema di gestione personal cloud e dispositivi per il tuo Homelab, con sincronizzazione realtime e accesso sicuro tramite Tailscale.
+**Sistema di gestione personal cloud e dispositivi per Homelab con sincronizzazione realtime e accesso sicuro tramite Tailscale.**
+
+---
+
+## 🎯 Giorno 1: Setup Infrastruttura Base
+
+### Obiettivi Completati ✅
+
+Oggi abbiamo costruito l'intera infrastruttura backend per Synthetix OS:
+
+- **Docker Compose Multi-Service**: FastAPI + PostgreSQL + Redis orchestrati
+- **FastAPI Boilerplate Professionale**: Struttura modulare con API REST complete
+- **Integrazione Supabase**: Autenticazione e database cloud ready
+- **Database Locale**: PostgreSQL per log ad alta frequenza
+- **Schema SQL Completo**: Tabelle profiles, devices, files con Row Level Security
+- **Configurazione Tailscale**: Accesso sicuro da tutta la Tailnet
+- **Storage Condiviso**: Volume Docker per simulare cloud storage
+
+### Architettura Implementata
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      TAILSCALE NETWORK                       │
+│                    (100.115.76.42:8000)                     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │   FastAPI Backend  │
+                    │   (Port 8000)      │
+                    │   + Supabase SDK   │
+                    └────────┬───────────┘
+                             │
+           ┌─────────────────┼─────────────────┐
+           │                 │                 │
+    ┌──────▼──────┐   ┌─────▼──────┐   ┌─────▼─────┐
+    │  PostgreSQL │   │   Redis    │   │  Supabase │
+    │   (Local)   │   │  (Cache)   │   │  (Cloud)  │
+    │  Log DB     │   │  State     │   │  Main DB  │
+    └─────────────┘   └────────────┘   └───────────┘
+```
+
+### Stack Tecnologico
+
+- **Backend**: FastAPI 0.109+ (Python 3.11)
+- **Database Cloud**: Supabase (PostgreSQL + Auth + RLS)
+- **Database Locale**: PostgreSQL 16 Alpine
+- **Cache**: Redis 7 Alpine
+- **Network**: Tailscale VPN Mesh
+- **Container**: Docker Compose
+- **Storage**: Volume Docker
+
+---
 
 ## 🚀 Quick Start
 
@@ -262,6 +313,46 @@ curl -X POST http://localhost:8000/api/files/upload \
 ### Perché Due Database?
 - **Supabase:** Dati principali, auth, sincronizzazione cross-device
 - **PostgreSQL locale:** Log ad alta frequenza che non necessitano cloud sync
+
+---
+
+## 📝 Log del Giorno 1
+
+### Cosa Abbiamo Costruito
+
+1. **Infrastructure as Code**
+   - `docker-compose.yml`: Orchestrazione di 3 servizi (FastAPI, PostgreSQL, Redis)
+   - `Dockerfile`: Immagine Python 3.11 ottimizzata
+   - Volume per storage condiviso
+
+2. **Backend FastAPI**
+   - Struttura modulare: `app/api/`, `app/core/`, `app/models/`
+   - Connessione a Supabase con `supabase-py`
+   - CORS configurato per web e desktop app
+   - Healthcheck dettagliato per monitoraggio
+
+3. **API Endpoints Implementate**
+   - Health: `/api/health`, `/api/health/detailed`
+   - Devices: CRUD completo per gestione dispositivi
+   - Files: Upload, download, gestione file cloud
+
+4. **Database Schema**
+   - Supabase: `profiles`, `devices`, `files` con RLS
+   - PostgreSQL locale: `device_logs`, `api_logs`, `system_events`
+   - Trigger automatici e funzioni utility
+
+5. **Sicurezza**
+   - Row Level Security su tutte le tabelle Supabase
+   - CORS configurato
+   - Variabili d'ambiente per credenziali sensibili
+
+### Prossimi Passi (Giorno 2+)
+
+- [ ] Implementare autenticazione JWT con Supabase Auth
+- [ ] WebSocket per notifiche realtime
+- [ ] Upload file con chunking per file grandi
+- [ ] Dashboard di monitoring
+- [ ] App mobile/desktop per test end-to-end
 
 ---
 
