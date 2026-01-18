@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from supabase import create_client, Client
+from supabase import create_client
 from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
@@ -9,6 +9,7 @@ from redis import Redis
 import logging
 
 from app.core.config import settings
+from app.core import deps
 from app.api import healthcheck, devices, files
 
 # Setup logging
@@ -18,35 +19,25 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-# Supabase client (global)
-supabase: Client = None
-
-# Local PostgreSQL engine
-local_db_engine = None
-
-# Redis client
-redis_client: Redis = None
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Gestisce startup e shutdown dell'applicazione"""
-    global supabase, local_db_engine, redis_client
     
     # Startup
     logger.info("🚀 Starting Synthetix OS API...")
     
     # Inizializza Supabase
     try:
-        supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+        deps.supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
         logger.info("✅ Supabase client initialized")
     except Exception as e:
         logger.error(f"❌ Failed to initialize Supabase: {e}")
     
     # Inizializza PostgreSQL locale
     try:
-        local_db_engine = create_engine(settings.DATABASE_URL)
-        with local_db_engine.connect() as conn:
+        deps.local_db_engine = create_engine(settings.DATABASE_URL)
+        with deps.local_db_engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         logger.info("✅ Local PostgreSQL connected")
     except Exception as e:
@@ -54,8 +45,8 @@ async def lifespan(app: FastAPI):
     
     # Inizializza Redis
     try:
-        redis_client = Redis.from_url(settings.REDIS_URL, decode_responses=True)
-        redis_client.ping()
+        deps.redis_client = Redis.from_url(settings.REDIS_URL, decode_responses=True)
+        deps.redis_client.ping()
         logger.info("✅ Redis connected")
     except Exception as e:
         logger.warning(f"⚠️  Redis not available: {e}")
@@ -64,10 +55,10 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("👋 Shutting down Synthetix OS API...")
-    if local_db_engine:
-        local_db_engine.dispose()
-    if redis_client:
-        redis_client.close()
+    if deps.local_db_engine:
+        deps.local_db_engine.dispose()
+    if deps.redis_client:
+        deps.redis_client.close()
 
 
 # Inizializza FastAPI
@@ -108,27 +99,3 @@ async def root():
         "status": "running",
         "docs": "/docs"
     }
-
-
-# Dependency per ottenere il client Supabase
-def get_supabase() -> Client:
-    """Dependency injection per Supabase client"""
-    if supabase is None:
-        raise HTTPException(status_code=500, detail="Supabase client not initialized")
-    return supabase
-
-
-# Dependency per ottenere il DB locale
-def get_local_db():
-    """Dependency injection per local PostgreSQL"""
-    if local_db_engine is None:
-        raise HTTPException(status_code=500, detail="Local database not initialized")
-    return local_db_engine
-
-
-# Dependency per ottenere Redis
-def get_redis() -> Redis:
-    """Dependency injection per Redis client"""
-    if redis_client is None:
-        raise HTTPException(status_code=503, detail="Redis not available")
-    return redis_client

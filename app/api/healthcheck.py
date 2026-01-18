@@ -3,7 +3,7 @@ from sqlalchemy import text
 from supabase import Client
 from redis import Redis
 
-from app.main import get_supabase, get_local_db, get_redis
+from app.core.deps import get_supabase, get_local_db, get_redis
 
 router = APIRouter()
 

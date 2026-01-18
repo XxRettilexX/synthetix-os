@@ -3,7 +3,7 @@ from typing import List
 from supabase import Client
 from datetime import datetime
 
-from app.main import get_supabase
+from app.core.deps import get_supabase
 from app.models.device import DeviceCreate, DeviceUpdate, DeviceResponse
 
 router = APIRouter()

@@ -5,7 +5,7 @@ from datetime import datetime
 import hashlib
 import os
 
-from app.main import get_supabase
+from app.core.deps import get_supabase
 from app.models.file import FileCreate, FileResponse, FileUploadResponse
 
 router = APIRouter()

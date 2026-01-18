@@ -8,4 +8,4 @@ psycopg2-binary==2.9.9
 sqlalchemy==2.0.25
 redis==5.0.1
 python-multipart==0.0.6
-httpx==0.26.0
+httpx<0.26,>=0.24
