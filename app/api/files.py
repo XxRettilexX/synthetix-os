@@ -147,3 +147,41 @@ async def delete_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error deleting file: {str(e)}"
         )
+@router.get("/{file_id}/download")
+async def download_file(
+    file_id: str,
+    current_user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase)
+):
+    """Download di un file"""
+    try:
+        result = supabase.table("files").select("*").eq("id", file_id).eq("user_id", current_user.id).execute()
+        
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"File {file_id} not found"
+            )
+        
+        file_record = result.data[0]
+        storage_path = file_record["storage_path"]
+        
+        if not os.path.exists(storage_path):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Physical file not found on server"
+            )
+            
+        from fastapi.responses import FileResponse as FastFileResponse
+        return FastFileResponse(
+            path=storage_path,
+            filename=file_record["name"],
+            media_type=file_record.get("mime_type")
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error downloading file: {str(e)}"
+        )

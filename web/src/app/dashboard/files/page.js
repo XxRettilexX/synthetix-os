@@ -96,15 +96,42 @@ export default function FileBrowser() {
     const deleteFile = async (id) => {
         if (!confirm("Are you sure you want to delete this file? (This action cannot be undone)")) return
         try {
-            await fetch(`${API_URL}/files/${id}`, {
+            const res = await fetch(`${API_URL}/files/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`
                 }
             })
-            fetchFiles()
+            if (res.ok) {
+                fetchFiles()
+            }
         } catch (e) {
             console.error("Delete failed", e)
+        }
+    }
+
+    const handleDownload = async (file) => {
+        try {
+            const res = await fetch(`${API_URL}/files/${file.id}/download`, {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            })
+
+            if (!res.ok) throw new Error('Download failed')
+
+            const blob = await res.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = file.name
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+        } catch (e) {
+            console.error("Download failed", e)
+            alert("Error downloading file")
         }
     }
 
