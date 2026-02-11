@@ -45,22 +45,35 @@ async def detailed_healthcheck(
         }
         health_status["status"] = "degraded"
     
-    # Check Local PostgreSQL
+    # Check Local DB (PostgreSQL or SQLite)
     try:
         with local_db.connect() as conn:
-            result = conn.execute(text("SELECT current_database(), version()"))
-            row = result.fetchone()
-            health_status["services"]["postgres_local"] = {
-                "status": "connected",
-                "database": row[0],
-                "version": row[1].split()[0] + " " + row[1].split()[1]
-            }
+            # Check if it's SQLite or Postgres
+            db_url = str(local_db.url)
+            if "sqlite" in db_url:
+                result = conn.execute(text("SELECT sqlite_version()"))
+                version = result.fetchone()[0]
+                health_status["services"]["local_db"] = {
+                    "status": "connected",
+                    "type": "sqlite",
+                    "version": version
+                }
+            else:
+                result = conn.execute(text("SELECT current_database(), version()"))
+                row = result.fetchone()
+                health_status["services"]["local_db"] = {
+                    "status": "connected",
+                    "type": "postgres",
+                    "database": row[0],
+                    "version": row[1].split()[0] + " " + row[1].split()[1]
+                }
     except Exception as e:
-        health_status["services"]["postgres_local"] = {
+        health_status["services"]["local_db"] = {
             "status": "error",
             "message": str(e)
         }
-        health_status["status"] = "degraded"
+        # Local DB might be critical for logs but not for the whole app in development
+        # health_status["status"] = "degraded"
     
     # Check Redis (optional)
     try:

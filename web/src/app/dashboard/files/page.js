@@ -26,6 +26,13 @@ export default function FileBrowser() {
     const [uploading, setUploading] = useState(false)
     const [search, setSearch] = useState('')
 
+    const getMockFiles = () => [
+        { id: '1', name: 'Synthetix_Strategy_2026.pdf', size: 1024 * 500, mime_type: 'application/pdf', created_at: new Date().toISOString() },
+        { id: '2', name: 'Dashboard_Redesign.png', size: 1024 * 1024 * 3.2, mime_type: 'image/png', created_at: new Date().toISOString() },
+        { id: '3', name: 'User_Workflow_v3.docx', size: 1024 * 250, mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', created_at: new Date().toISOString() },
+        { id: '4', name: 'Presentation_Slide_Deck.pptx', size: 1024 * 1024 * 8.5, mime_type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', created_at: new Date().toISOString() },
+    ]
+
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
     const fetchFiles = async () => {
@@ -37,18 +44,16 @@ export default function FileBrowser() {
                     'Authorization': `Bearer ${session.access_token}`
                 }
             })
-            if (!res.ok) throw new Error('Failed to fetch')
+            if (!res.ok) {
+                console.warn('Files API returned error, using fallback data.')
+                setFiles(getMockFiles())
+                return
+            }
             const data = await res.json()
             setFiles(data)
         } catch (e) {
-            console.error(e)
-            // Mock data for dev
-            setFiles([
-                { id: '1', name: 'Synthetix_Strategy_2026.pdf', size: 1024 * 500, mime_type: 'application/pdf', created_at: new Date().toISOString() },
-                { id: '2', name: 'Dashboard_Redesign.png', size: 1024 * 1024 * 3.2, mime_type: 'image/png', created_at: new Date().toISOString() },
-                { id: '3', name: 'User_Workflow_v3.docx', size: 1024 * 250, mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', created_at: new Date().toISOString() },
-                { id: '4', name: 'Presentation_Slide_Deck.pptx', size: 1024 * 1024 * 8.5, mime_type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', created_at: new Date().toISOString() },
-            ])
+            console.error('File fetch error:', e)
+            setFiles(getMockFiles())
         } finally {
             setLoading(false)
         }

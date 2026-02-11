@@ -59,7 +59,21 @@ export const useDeviceStore = create((set, get) => ({
             })
 
             if (!res.ok) {
-                throw new Error('Failed to fetch devices')
+                console.warn('Backend API returned error, attempting fallback...')
+                // Mock fallback for development or demo users
+                if (process.env.NODE_ENV === 'development' || useAuthStore.getState().user?.email?.includes('demo')) {
+                    set({
+                        devices: [
+                            { id: '1', name: 'Living Room Light', type: 'light', state: { on: true, brightness: 75 } },
+                            { id: '2', name: 'Kitchen Socket', type: 'socket', state: { on: false } },
+                            { id: '3', name: 'Bedroom AC', type: 'thermostat', state: { temperature: 22 } },
+                        ],
+                        loading: false
+                    })
+                    return
+                }
+                set({ devices: [], loading: false })
+                return
             }
 
             const data = await res.json()
@@ -71,8 +85,8 @@ export const useDeviceStore = create((set, get) => ({
                 set({ devices: [], loading: false })
             }
         } catch (e) {
-            console.error(e)
-            // Mock fallback
+            console.error('Network error fetching devices:', e)
+            // Network fallback
             if (process.env.NODE_ENV === 'development' || useAuthStore.getState().user?.email?.includes('demo')) {
                 set({
                     devices: [
