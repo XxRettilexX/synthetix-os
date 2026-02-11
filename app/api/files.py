@@ -5,12 +5,11 @@ from datetime import datetime
 import hashlib
 import os
 
+from app.core.config import settings
 from app.core.deps import get_supabase, get_current_user
 from app.models.file import FileCreate, FileResponse, FileUploadResponse
 
 router = APIRouter()
-
-STORAGE_PATH = "/app/storage"
 
 
 @router.get("/", response_model=List[FileResponse])
@@ -47,8 +46,8 @@ async def upload_file(
         user_id = current_user.id
         
         # Salva il file localmente (simula cloud storage)
-        os.makedirs(f"{STORAGE_PATH}/{user_id}", exist_ok=True)
-        storage_path = f"{STORAGE_PATH}/{user_id}/{checksum}_{file.filename}"
+        os.makedirs(f"{settings.STORAGE_PATH}/{user_id}", exist_ok=True)
+        storage_path = f"{settings.STORAGE_PATH}/{user_id}/{checksum}_{file.filename}"
         
         with open(storage_path, "wb") as f:
             f.write(contents)

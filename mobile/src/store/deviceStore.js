@@ -1,24 +1,13 @@
 import { create } from 'zustand';
-import axios from 'axios';
+import apiClient from '../api/client';
 import { API_URL } from '../api/config';
 import { useAuthStore } from './authStore';
-
-const apiClient = axios.create({
-    baseURL: API_URL,
-});
-
-apiClient.interceptors.request.use((config) => {
-    const token = useAuthStore.getState().session?.access_token;
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
 
 export const useDeviceStore = create((set, get) => ({
     devices: [],
     isLoading: false,
     error: null,
+    ws: null,
 
     fetchDevices: async () => {
         set({ isLoading: true, error: null });
@@ -31,8 +20,8 @@ export const useDeviceStore = create((set, get) => ({
             if (!error.response) {
                 set({
                     devices: [
-                        { id: 'mock-1', name: 'Mock Light', device_type: 'virtual_light', state: { on: false, brightness: 50 }, user_id: 'mock-user' },
-                        { id: 'mock-2', name: 'Mock Thermostat', device_type: 'iot', state: { temperature: 22.5 }, user_id: 'mock-user' }
+                        { id: 'mock-1', name: 'Luce Soggiorno', device_type: 'virtual_light', state: { on: false, brightness: 50 }, user_id: 'mock-user' },
+                        { id: 'mock-2', name: 'Termostato', device_type: 'iot', state: { temperature: 22.5 }, user_id: 'mock-user' }
                     ],
                     isLoading: false
                 });
@@ -71,6 +60,32 @@ export const useDeviceStore = create((set, get) => ({
     },
 
     startRealtimeUpdates: () => {
-        // TODO: Implementare WebSocket client
+        const token = useAuthStore.getState().session?.access_token;
+        if (!token || get().ws) return;
+
+        // Determina WS_URL dall'API_URL
+        const wsUrl = API_URL.replace('http', 'ws') + '/ws/devices';
+        const socket = new WebSocket(`${wsUrl}?token=${token}`);
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.event === 'device_update') {
+                set(state => ({
+                    devices: state.devices.map(d =>
+                        d.id === data.device_id
+                            ? { ...d, state: data.state }
+                            : d
+                    )
+                }));
+            }
+        };
+
+        socket.onclose = () => {
+            set({ ws: null });
+            // Riprova tra 5 secondi
+            setTimeout(() => get().startRealtimeUpdates(), 5000);
+        };
+
+        set({ ws: socket });
     }
 }));

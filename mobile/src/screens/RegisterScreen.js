@@ -15,7 +15,7 @@ export default function RegisterScreen({ navigation }) {
         try {
             const { error } = await signUp(email, password);
             if (error) {
-                Alert.alert('Errore', error.message);
+                Alert.alert('Errore', error);
             } else {
                 Alert.alert('Successo', 'Account creato! Effettua il login.');
                 navigation.navigate('Login');

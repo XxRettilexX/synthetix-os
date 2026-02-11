@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"
     
+    # Storage
+    STORAGE_PATH: str = "./shared_storage"
+    
     # API Settings
     API_V1_PREFIX: str = "/api/v1"
     PROJECT_NAME: str = "Synthetix OS"

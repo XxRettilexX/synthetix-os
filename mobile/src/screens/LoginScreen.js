@@ -15,7 +15,7 @@ export default function LoginScreen({ navigation }) {
         try {
             const { error } = await signIn(email, password);
             if (error) {
-                Alert.alert('Errore', error.message);
+                Alert.alert('Errore', error);
             }
         } catch (error) {
             Alert.alert('Errore', 'Si è verificato un errore durante il login');

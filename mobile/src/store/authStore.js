@@ -1,14 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient } from '@supabase/supabase-js';
-import Constants from 'expo-constants';
-
-// Configurazione Supabase (usare variabili d'ambiente in produzione)
-// Per ora hardcoded per test locale
-const SUPABASE_URL = "https://example.supabase.co"; // Mock URL
-const SUPABASE_KEY = "mock_key";
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+import { API_URL } from '../api/config';
 
 export const useAuthStore = create((set) => ({
     user: null,
@@ -18,9 +10,16 @@ export const useAuthStore = create((set) => ({
 
     initialize: async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                set({ user: session.user, session, isAuthenticated: true, isLoading: false });
+            const savedSession = await AsyncStorage.getItem('synthetix-session');
+            const savedUser = await AsyncStorage.getItem('synthetix-user');
+
+            if (savedSession && savedUser) {
+                set({
+                    user: JSON.parse(savedUser),
+                    session: JSON.parse(savedSession),
+                    isAuthenticated: true,
+                    isLoading: false
+                });
             } else {
                 set({ isLoading: false });
             }
@@ -31,36 +30,60 @@ export const useAuthStore = create((set) => ({
     },
 
     signIn: async (email, password) => {
-        // Mock login logic se supabase è mockato
-        if (SUPABASE_URL.includes("example")) {
-            const mockUser = { id: "mock-user-id", email };
-            set({ user: mockUser, isAuthenticated: true, session: { access_token: "mock-token" } });
-            return { data: { user: mockUser }, error: null };
-        }
+        try {
+            const res = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+            if (!res.ok) {
+                // Mock fallback per sviluppo locale se il backend non è raggiungibile
+                if (email.includes('demo')) {
+                    const mockUser = { id: 'mock-user', email };
+                    const mockSession = { access_token: 'mock-token' };
+                    await AsyncStorage.setItem('synthetix-session', JSON.stringify(mockSession));
+                    await AsyncStorage.setItem('synthetix-user', JSON.stringify(mockUser));
+                    set({ user: mockUser, session: mockSession, isAuthenticated: true });
+                    return { data: { user: mockUser }, error: null };
+                }
+                throw new Error('Login fallito');
+            }
 
-        if (data.session) {
-            set({ user: data.user, session: data.session, isAuthenticated: true });
+            const data = await res.json();
+            const session = { access_token: data.access_token };
+            await AsyncStorage.setItem('synthetix-session', JSON.stringify(session));
+            await AsyncStorage.setItem('synthetix-user', JSON.stringify(data.user));
+
+            set({ user: data.user, session, isAuthenticated: true });
+            return { data, error: null };
+        } catch (error) {
+            console.error("SignIn error", error);
+            return { data: null, error: error.message };
         }
-        return { data, error };
     },
 
     signUp: async (email, password) => {
-        if (SUPABASE_URL.includes("example")) {
-            // Mock signup
-            return { data: { user: { id: "mock-new-user", email } }, error: null };
+        try {
+            const res = await fetch(`${API_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+
+            if (!res.ok) throw new Error('Registrazione fallita');
+
+            const data = await res.json();
+            return { data, error: null };
+        } catch (error) {
+            console.error("SignUp error", error);
+            return { data: null, error: error.message };
         }
-        return await supabase.auth.signUp({ email, password });
     },
 
     signOut: async () => {
-        if (!SUPABASE_URL.includes("example")) {
-            await supabase.auth.signOut();
-        }
+        await AsyncStorage.removeItem('synthetix-session');
+        await AsyncStorage.removeItem('synthetix-user');
         set({ user: null, session: null, isAuthenticated: false });
     },
 }));
