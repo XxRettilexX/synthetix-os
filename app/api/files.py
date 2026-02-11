@@ -5,7 +5,7 @@ from datetime import datetime
 import hashlib
 import os
 
-from app.core.deps import get_supabase
+from app.core.deps import get_supabase, get_current_user
 from app.models.file import FileCreate, FileResponse, FileUploadResponse
 
 router = APIRouter()
@@ -15,12 +15,12 @@ STORAGE_PATH = "/app/storage"
 
 @router.get("/", response_model=List[FileResponse])
 async def list_files(
+    current_user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase)
 ):
     """Lista tutti i file dell'utente corrente"""
     try:
-        # TODO: Implementare autenticazione e filtrare per user_id
-        result = supabase.table("files").select("*").execute()
+        result = supabase.table("files").select("*").eq("user_id", current_user.id).execute()
         return result.data
     except Exception as e:
         raise HTTPException(
@@ -32,6 +32,7 @@ async def list_files(
 @router.post("/upload", response_model=FileUploadResponse)
 async def upload_file(
     file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase)
 ):
     """Upload di un file nel personal cloud"""
@@ -43,8 +44,7 @@ async def upload_file(
         # Calcola checksum
         checksum = hashlib.sha256(contents).hexdigest()
         
-        # TODO: Ottenere user_id dal token
-        user_id = "00000000-0000-0000-0000-000000000000"
+        user_id = current_user.id
         
         # Salva il file localmente (simula cloud storage)
         os.makedirs(f"{STORAGE_PATH}/{user_id}", exist_ok=True)
@@ -91,11 +91,12 @@ async def upload_file(
 @router.get("/{file_id}", response_model=FileResponse)
 async def get_file(
     file_id: str,
+    current_user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase)
 ):
     """Ottieni informazioni su un file specifico"""
     try:
-        result = supabase.table("files").select("*").eq("id", file_id).execute()
+        result = supabase.table("files").select("*").eq("id", file_id).eq("user_id", current_user.id).execute()
         
         if not result.data:
             raise HTTPException(
@@ -116,12 +117,13 @@ async def get_file(
 @router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_file(
     file_id: str,
+    current_user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase)
 ):
     """Elimina un file"""
     try:
         # Ottieni informazioni sul file per eliminare il file fisico
-        result = supabase.table("files").select("*").eq("id", file_id).execute()
+        result = supabase.table("files").select("*").eq("id", file_id).eq("user_id", current_user.id).execute()
         
         if not result.data:
             raise HTTPException(

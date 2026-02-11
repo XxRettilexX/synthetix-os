@@ -9,8 +9,9 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_KEY: str
     
-    # Database locale (PostgreSQL)
-    DATABASE_URL: str = "postgresql://synthetix:synthetix_password@postgres:5432/synthetix_logs"
+    # Database locale (PostgreSQL -> SQLite fallback for dev)
+    # DATABASE_URL: str = "postgresql://synthetix:synthetix_password@postgres:5432/synthetix_logs"
+    DATABASE_URL: str = "sqlite:///./synthetix.db"
     
     # Redis
     REDIS_URL: str = "redis://redis:6379/0"

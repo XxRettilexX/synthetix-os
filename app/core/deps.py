@@ -6,15 +6,22 @@ from redis import Redis
 import logging
 
 from app.core.config import settings
+from app.core.device_manager import DeviceManager
+from app.drivers import VirtualLight
 
 # Globals che verranno inizializzati nel main
-supabase_client: Client = None
+# Globals che verranno inizializzati nel main
+supabase_client = None  # Union[Client, MockSupabaseClient]
 local_db_engine = None
 redis_client: Redis = None
+device_manager: DeviceManager = DeviceManager.get_instance()
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
-def get_supabase() -> Client:
+# Register default drivers
+device_manager.register_device_type("virtual_light", VirtualLight)
+
+def get_supabase():
     """Dependency injection per Supabase client"""
     if supabase_client is None:
         raise HTTPException(status_code=500, detail="Supabase client not initialized")
@@ -33,6 +40,11 @@ def get_redis() -> Redis:
     if redis_client is None:
         raise HTTPException(status_code=503, detail="Redis not available")
     return redis_client
+
+
+def get_device_manager() -> DeviceManager:
+    """Dependency injection per Device Manager"""
+    return device_manager
 
 
 async def get_current_user(

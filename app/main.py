@@ -11,7 +11,8 @@ import logging
 
 from app.core.config import settings
 from app.core import deps
-from app.api import healthcheck, devices, files
+from app.core.mock_supabase import MockSupabaseClient
+from app.api import auth, healthcheck, devices, files, ws
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -29,18 +30,28 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting Synthetix OS API...")
     
     # Inizializza Supabase
+    # Inizializza Supabase
     try:
-        deps.supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+        # Check if using placeholder/mock credentials
+        if "mock_key" in settings.SUPABASE_KEY or settings.SUPABASE_URL == "https://example.supabase.co":
+             logger.warning("⚠️ Using MOCK Supabase Client - Persistance is volatile")
+             deps.supabase_client = MockSupabaseClient(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+        else:
+             deps.supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
         logger.info("✅ Supabase client initialized")
     except Exception as e:
         logger.error(f"❌ Failed to initialize Supabase: {e}")
     
-    # Inizializza PostgreSQL locale
+    # Inizializza DB Locale (PostgreSQL o SQLite)
     try:
-        deps.local_db_engine = create_engine(settings.DATABASE_URL)
+        connect_args = {}
+        if settings.DATABASE_URL.startswith("sqlite"):
+            connect_args = {"check_same_thread": False}
+            
+        deps.local_db_engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
         with deps.local_db_engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        logger.info("✅ Local PostgreSQL connected")
+        logger.info("✅ Local Database connected")
     except Exception as e:
         logger.error(f"❌ Failed to connect to local PostgreSQL: {e}")
     
@@ -87,7 +98,9 @@ app.add_middleware(
 
 # Include routers
 app.include_router(healthcheck.router, prefix="/api", tags=["Health"])
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(devices.router, prefix="/api/devices", tags=["Devices"])
+app.include_router(ws.router, prefix="/api/ws", tags=["Websocket"])
 app.include_router(files.router, prefix="/api/files", tags=["Files"])
 
 
