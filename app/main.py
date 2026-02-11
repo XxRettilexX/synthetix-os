@@ -12,7 +12,7 @@ import logging
 from app.core.config import settings
 from app.core import deps
 from app.core.mock_supabase import MockSupabaseClient
-from app.api import auth, healthcheck, devices, files, ws
+from app.api import auth, healthcheck, devices, files, ws, profiles
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -123,6 +123,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(devices.router, prefix="/api/devices", tags=["Devices"])
 app.include_router(ws.router, prefix="/api/ws", tags=["Websocket"])
 app.include_router(files.router, prefix="/api/files", tags=["Files"])
+app.include_router(profiles.router, prefix="/api/profiles", tags=["Profiles"])
 
 
 @app.get("/")

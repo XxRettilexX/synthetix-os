@@ -255,6 +255,7 @@ export default function FileBrowser() {
                                                 <motion.button
                                                     whileHover={{ scale: 1.1 }}
                                                     whileTap={{ scale: 0.9 }}
+                                                    onClick={() => handleDownload(file)}
                                                     className="p-2.5 text-gray-300 hover:text-primary transition-colors hover:bg-white hover:shadow-sm rounded-lg"
                                                 >
                                                     <Download size={18} />

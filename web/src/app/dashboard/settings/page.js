@@ -15,9 +15,49 @@ import {
 import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
-    const { user } = useAuthStore()
+    const { user, session } = useAuthStore()
     const [activeTab, setActiveTab] = useState('profile')
     const [saved, setSaved] = useState(false)
+    const [fullName, setFullName] = useState('')
+    const [loading, setLoading] = useState(false)
+
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+
+    useEffect(() => {
+        if (session) {
+            fetch(`${API_URL}/profiles/me`, {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    setFullName(data.full_name || '')
+                })
+                .catch(console.error)
+        }
+    }, [session])
+
+    const handleSave = async () => {
+        if (!session) return
+        setLoading(true)
+        try {
+            const res = await fetch(`${API_URL}/profiles/me`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ full_name: fullName })
+            })
+            if (res.ok) {
+                setSaved(true)
+                setTimeout(() => setSaved(false), 3000)
+            }
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const tabs = [
         { id: 'profile', label: 'Profile', icon: User },
@@ -25,11 +65,6 @@ export default function SettingsPage() {
         { id: 'security', label: 'Security', icon: Shield },
         { id: 'system', label: 'System', icon: Keyboard },
     ]
-
-    const handleSave = () => {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
-    }
 
     if (!user) return null
 
