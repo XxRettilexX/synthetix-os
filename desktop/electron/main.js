@@ -4,7 +4,7 @@ import { join } from 'node:path'
 process.env.DIST = join(__dirname, '../dist')
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : join(__dirname, '../public')
 
-let win: BrowserWindow | null
+let win;
 
 const preload = join(__dirname, './preload.js')
 const url = process.env.VITE_DEV_SERVER_URL

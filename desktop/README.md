@@ -1,16 +1,39 @@
-# React + Vite
+# Synthetix OS Desktop App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the desktop client for Synthetix OS, built with Electron, React, and Vite.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
 
-## React Compiler
+2.  **Run Development Mode**:
+    ```bash
+    npm run dev
+    ```
+    This will start the Vite dev server and launch the Electron window.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+3.  **Build for Production**:
+    ```bash
+    npm run build
+    ```
+    The output will be in the `dist` and `dist-electron` directories.
+    To package the app, you may need to configure `electron-builder` further in `package.json`.
 
-## Expanding the ESLint configuration
+## Configuration
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+*   **API URL**: By default, it connects to `http://localhost:8000/api`.
+    *   To change this, set `VITE_API_URL` in a `.env` file in the `desktop` directory.
+
+## Features
+
+*   **Authentication**: Login using the same credentials as mobile/web.
+*   **Device Dashboard**: View and toggle devices.
+*   **Electron Integration**: Native window management.
+
+## Troubleshooting
+
+*   If Electron doesn't open, ensure `npm run dev` output shows "VITE vX.X.X ready".
+*   If API calls fail, ensure the backend is running on port 8000.
