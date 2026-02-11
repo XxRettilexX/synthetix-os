@@ -42,6 +42,27 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Failed to initialize Supabase: {e}")
     
+    # Seed Mock Data if applicable
+    if deps.supabase_client and hasattr(deps.supabase_client, "_tables"):
+        logger.info("🌱 Seeding Mock Data...")
+        deps.supabase_client.table("devices").insert({
+            "id": "mock-dev-1",
+            "name": "Local MacBook Light",
+            "device_type": "virtual_light",
+            "state": {"on": True, "brightness": 100},
+            "user_id": "mock-user-id",
+            "created_at": "2026-02-11T12:00:00Z"
+        }).execute()
+        deps.supabase_client.table("files").insert({
+            "id": "mock-file-1",
+            "name": "System_Config.yaml",
+            "path": "/System_Config.yaml",
+            "storage_path": "mock/path/System_Config.yaml",
+            "size": 1240,
+            "user_id": "mock-user-id",
+            "created_at": "2026-02-11T12:00:00Z"
+        }).execute()
+    
     # Inizializza DB Locale (PostgreSQL o SQLite)
     try:
         connect_args = {}

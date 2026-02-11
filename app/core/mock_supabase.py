@@ -70,6 +70,10 @@ class MockAuth:
                 logger.info(f"MockAuth: Validated token for {email}")
                 return MockAuthResponse(user=record["user"], session=None)
         
+        if token == "mock-token":
+             logger.info("MockAuth: Validated special 'mock-token'")
+             return MockAuthResponse(user=MockUser(id="mock-user-id", email="demo@example.com"), session=None)
+
         # Fallback: Create a transient user if token looks like a UUID (for testing restart persistence)
         try:
              uuid.UUID(token)
