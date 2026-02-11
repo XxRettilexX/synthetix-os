@@ -134,6 +134,8 @@ export default function SettingsPage() {
                                             <input
                                                 type="text"
                                                 placeholder="Mario Rossi"
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
                                                 className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary focus:bg-white outline-none transition-all font-medium text-gray-900"
                                             />
                                         </div>

@@ -16,13 +16,14 @@ import { theme } from '../theme';
 
 export default function HomeScreen() {
     const { user, signOut } = useAuthStore();
-    const { devices, fetchDevices, toggleDevice } = useDeviceStore();
+    const { devices, fetchDevices, toggleDevice, startRealtimeUpdates } = useDeviceStore();
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         setLoading(true);
         fetchDevices().finally(() => setLoading(false));
+        startRealtimeUpdates();
     }, []);
 
     const onRefresh = async () => {
