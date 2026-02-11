@@ -57,11 +57,34 @@ export const useDeviceStore = create((set, get) => ({
             const res = await fetch(`${API_URL}/devices`, {
                 headers: { 'Authorization': `Bearer ${session.access_token}` }
             })
+
+            if (!res.ok) {
+                throw new Error('Failed to fetch devices')
+            }
+
             const data = await res.json()
-            set({ devices: data, loading: false })
+
+            if (Array.isArray(data)) {
+                set({ devices: data, loading: false })
+            } else {
+                console.error('Data is not an array:', data)
+                set({ devices: [], loading: false })
+            }
         } catch (e) {
             console.error(e)
-            set({ loading: false })
+            // Mock fallback
+            if (process.env.NODE_ENV === 'development' || useAuthStore.getState().user?.email?.includes('demo')) {
+                set({
+                    devices: [
+                        { id: '1', name: 'Living Room Light', type: 'light', state: { on: true, brightness: 75 } },
+                        { id: '2', name: 'Kitchen Socket', type: 'socket', state: { on: false } },
+                        { id: '3', name: 'Bedroom AC', type: 'thermostat', state: { temperature: 22 } },
+                    ],
+                    loading: false
+                })
+            } else {
+                set({ devices: [], loading: false })
+            }
         }
     },
 
