@@ -7,9 +7,9 @@ import {
     StyleSheet,
     TouchableOpacity,
     RefreshControl,
-    SafeAreaView,
     ActivityIndicator
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { useDeviceStore } from '../store/deviceStore';
 import { theme } from '../theme';
@@ -19,6 +19,7 @@ export default function HomeScreen() {
     const { devices, fetchDevices, toggleDevice, startRealtimeUpdates } = useDeviceStore();
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(false);
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         setLoading(true);
@@ -36,7 +37,7 @@ export default function HomeScreen() {
     };
 
     const handleToggle = (id, currentState) => {
-        toggleDevice(id, currentState);
+        toggleDevice(id, !!currentState);
     };
 
     const renderDevice = ({ item }) => (
@@ -57,7 +58,7 @@ export default function HomeScreen() {
                 </View>
                 {item.state && 'on' in item.state && (
                     <Switch
-                        value={item.state.on}
+                        value={!!item.state.on}
                         onValueChange={() => handleToggle(item.id, item.state.on)}
                         trackColor={{ false: '#e1e4e8', true: theme.colors.primary }}
                         thumbColor={'#fff'}
@@ -65,7 +66,7 @@ export default function HomeScreen() {
                 )}
             </View>
 
-            {item.state && item.state.brightness !== undefined && item.state.on && (
+            {item.state && item.state.brightness !== undefined && !!item.state.on && (
                 <View style={styles.progressContainer}>
                     <View style={styles.progressBar}>
                         <View style={[styles.progressFill, { width: `${item.state.brightness}%` }]} />
@@ -77,7 +78,7 @@ export default function HomeScreen() {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
                 <View>
                     <Text style={styles.greeting}>Bentornato,</Text>
@@ -92,12 +93,12 @@ export default function HomeScreen() {
 
             <View style={styles.statsContainer}>
                 <View style={styles.statBox}>
-                    <Text style={styles.statValue}>{devices.length}</Text>
+                    <Text style={styles.statValue}>{String(devices.length)}</Text>
                     <Text style={styles.statLabel}>Dispositivi</Text>
                 </View>
                 <View style={[styles.statBox, styles.statBoxBorder]}>
                     <Text style={styles.statValue}>
-                        {devices.filter(d => d.state?.on).length}
+                        {String(devices.filter(d => !!d.state?.on).length)}
                     </Text>
                     <Text style={styles.statLabel}>Accesi</Text>
                 </View>
@@ -115,11 +116,11 @@ export default function HomeScreen() {
                 <FlatList
                     data={devices}
                     renderItem={renderDevice}
-                    keyExtractor={item => item.id}
+                    keyExtractor={item => String(item.id)}
                     contentContainerStyle={styles.list}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+                        <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
@@ -131,7 +132,7 @@ export default function HomeScreen() {
                     }
                 />
             )}
-        </SafeAreaView>
+        </View>
     );
 }
 

@@ -36,19 +36,23 @@ async def upload_file(
 ):
     """Upload di un file nel personal cloud"""
     try:
+        user_id = current_user.id
+        print(f"🚀 Receiving file upload: {file.filename} ({file.content_type}) from user {user_id}")
+        
         # Leggi il contenuto del file
         contents = await file.read()
         file_size = len(contents)
+        print(f"📊 File size: {file_size} bytes")
         
         # Calcola checksum
         checksum = hashlib.sha256(contents).hexdigest()
         
-        user_id = current_user.id
-        
         # Salva il file localmente (simula cloud storage)
-        os.makedirs(f"{settings.STORAGE_PATH}/{user_id}", exist_ok=True)
-        storage_path = f"{settings.STORAGE_PATH}/{user_id}/{checksum}_{file.filename}"
+        storage_dir = f"{settings.STORAGE_PATH}/{user_id}"
+        os.makedirs(storage_dir, exist_ok=True)
+        storage_path = f"{storage_dir}/{checksum}_{file.filename}"
         
+        print(f"💾 Saving to: {storage_path}")
         with open(storage_path, "wb") as f:
             f.write(contents)
         
@@ -64,23 +68,27 @@ async def upload_file(
             "created_at": datetime.utcnow().isoformat()
         }
         
+        print(f"📝 Registering in DB: {file.filename}")
         result = supabase.table("files").insert(file_data).execute()
         
         if result.data:
             file_record = result.data[0]
+            print(f"✅ Upload successful: {file_record['id']}")
             return FileUploadResponse(
-                file_id=file_record["id"],
+                file_id=str(file_record["id"]),
                 name=file.filename,
                 size=file_size,
                 url=f"/api/files/{file_record['id']}/download"
             )
         else:
+            print("❌ DB Insert returned no data")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create file record"
+                detail="Failed to create file record in database"
             )
             
     except Exception as e:
+        print(f"❌ Upload error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error uploading file: {str(e)}"

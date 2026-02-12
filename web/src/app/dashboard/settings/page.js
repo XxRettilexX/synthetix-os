@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuthStore } from '@/lib/store'
 import Sidebar from '@/components/Sidebar'
 import { motion } from 'framer-motion'

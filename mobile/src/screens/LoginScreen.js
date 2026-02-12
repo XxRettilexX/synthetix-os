@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { theme } from '../theme';
 
@@ -7,6 +8,7 @@ export default function LoginScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const insets = useSafeAreaInsets();
     const { signIn } = useAuthStore();
 
     const handleLogin = async () => {
@@ -25,7 +27,7 @@ export default function LoginScreen({ navigation }) {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.content}>
                 <Text style={styles.title}>Synthetix OS</Text>
                 <Text style={styles.subtitle}>Welcome back</Text>
@@ -49,17 +51,17 @@ export default function LoginScreen({ navigation }) {
                         placeholder="********"
                         value={password}
                         onChangeText={setPassword}
-                        secureTextEntry
+                        secureTextEntry={true}
                     />
                 </View>
 
                 <TouchableOpacity
                     style={styles.button}
                     onPress={handleLogin}
-                    disabled={loading}
+                    disabled={!!loading}
                 >
                     {loading ? (
-                        <ActivityIndicator color="#fff" />
+                        <ActivityIndicator color="#fff" animating={true} />
                     ) : (
                         <Text style={styles.buttonText}>Accedi</Text>
                     )}
@@ -72,9 +74,10 @@ export default function LoginScreen({ navigation }) {
                     <Text style={styles.linkText}>Non hai un account? Registrati</Text>
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </View>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {

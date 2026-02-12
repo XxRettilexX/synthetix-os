@@ -28,18 +28,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Gli utenti possono leggere solo il proprio profilo
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile"
     ON public.profiles
     FOR SELECT
     USING (auth.uid() = id);
 
 -- Policy: Gli utenti possono aggiornare solo il proprio profilo
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
     ON public.profiles
     FOR UPDATE
     USING (auth.uid() = id);
 
 -- Policy: Gli utenti possono inserire solo il proprio profilo
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile"
     ON public.profiles
     FOR INSERT
@@ -54,6 +57,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS set_updated_at ON public.profiles;
 CREATE TRIGGER set_updated_at
     BEFORE UPDATE ON public.profiles
     FOR EACH ROW
@@ -74,6 +78,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger per creare il profilo automaticamente
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW
@@ -113,30 +118,35 @@ CREATE INDEX IF NOT EXISTS idx_devices_state ON public.devices USING gin(state);
 ALTER TABLE public.devices ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Gli utenti possono vedere solo i propri device
+DROP POLICY IF EXISTS "Users can view own devices" ON public.devices;
 CREATE POLICY "Users can view own devices"
     ON public.devices
     FOR SELECT
     USING (auth.uid() = user_id);
 
 -- Policy: Gli utenti possono inserire device per se stessi
+DROP POLICY IF EXISTS "Users can insert own devices" ON public.devices;
 CREATE POLICY "Users can insert own devices"
     ON public.devices
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
 -- Policy: Gli utenti possono aggiornare i propri device
+DROP POLICY IF EXISTS "Users can update own devices" ON public.devices;
 CREATE POLICY "Users can update own devices"
     ON public.devices
     FOR UPDATE
     USING (auth.uid() = user_id);
 
 -- Policy: Gli utenti possono eliminare i propri device
+DROP POLICY IF EXISTS "Users can delete own devices" ON public.devices;
 CREATE POLICY "Users can delete own devices"
     ON public.devices
     FOR DELETE
     USING (auth.uid() = user_id);
 
 -- Trigger per updated_at
+DROP TRIGGER IF EXISTS set_devices_updated_at ON public.devices;
 CREATE TRIGGER set_devices_updated_at
     BEFORE UPDATE ON public.devices
     FOR EACH ROW
@@ -190,6 +200,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_files_user_path_unique
 ALTER TABLE public.files ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Gli utenti possono vedere i propri file e quelli condivisi con loro
+DROP POLICY IF EXISTS "Users can view own and shared files" ON public.files;
 CREATE POLICY "Users can view own and shared files"
     ON public.files
     FOR SELECT
@@ -200,24 +211,28 @@ CREATE POLICY "Users can view own and shared files"
     );
 
 -- Policy: Gli utenti possono inserire file per se stessi
+DROP POLICY IF EXISTS "Users can insert own files" ON public.files;
 CREATE POLICY "Users can insert own files"
     ON public.files
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
 -- Policy: Gli utenti possono aggiornare i propri file
+DROP POLICY IF EXISTS "Users can update own files" ON public.files;
 CREATE POLICY "Users can update own files"
     ON public.files
     FOR UPDATE
     USING (auth.uid() = user_id);
 
 -- Policy: Gli utenti possono eliminare i propri file
+DROP POLICY IF EXISTS "Users can delete own files" ON public.files;
 CREATE POLICY "Users can delete own files"
     ON public.files
     FOR DELETE
     USING (auth.uid() = user_id);
 
 -- Trigger per updated_at
+DROP TRIGGER IF EXISTS set_files_updated_at ON public.files;
 CREATE TRIGGER set_files_updated_at
     BEFORE UPDATE ON public.files
     FOR EACH ROW

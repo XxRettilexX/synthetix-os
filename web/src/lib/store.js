@@ -18,13 +18,37 @@ export const useAuthStore = create(
                     })
 
                     if (!res.ok) {
-                        // Mock fallback for dev
-                        if (email.includes('demo') || process.env.NODE_ENV === 'development') {
+                        // Consenti il fallback a mock login SOLO per email con 'demo'
+                        if (email.includes('demo')) {
+                            console.warn('Using Demo Login Fallback')
                             const mockUser = { id: 'mock-user', email }
+                            // Inserisco un "mock-session" per far sì che le chiamate successive vadano in fallback correttamente
                             set({ user: mockUser, session: { access_token: 'mock-token' }, isAuthenticated: true })
                             return { user: mockUser }
                         }
-                        throw new Error('Login failed')
+                        const err = await res.json().catch(() => ({ detail: 'Login failed' }))
+                        throw new Error(err.detail || 'Login failed')
+                    }
+
+                    const data = await res.json()
+                    set({ user: data.user, session: data.session, isAuthenticated: true })
+                    return data
+                } catch (error) {
+                    console.error(error)
+                    throw error
+                }
+            },
+            register: async (email, password, fullName) => {
+                try {
+                    const res = await fetch(`${API_URL}/auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password, full_name: fullName }),
+                    })
+
+                    if (!res.ok) {
+                        const error = await res.json()
+                        throw new Error(error.detail || 'Registration failed')
                     }
 
                     const data = await res.json()
@@ -59,9 +83,9 @@ export const useDeviceStore = create((set, get) => ({
             })
 
             if (!res.ok) {
-                console.warn('Backend API returned error, attempting fallback...')
-                // Mock fallback for development or demo users
-                if (process.env.NODE_ENV === 'development' || useAuthStore.getState().user?.email?.includes('demo')) {
+                console.warn('Backend API returned error')
+                // Fallback only for explicit demo users
+                if (useAuthStore.getState().user?.email?.includes('demo')) {
                     set({
                         devices: [
                             { id: '1', name: 'Living Room Light', type: 'light', state: { on: true, brightness: 75 } },
@@ -86,8 +110,7 @@ export const useDeviceStore = create((set, get) => ({
             }
         } catch (e) {
             console.error('Network error fetching devices:', e)
-            // Network fallback
-            if (process.env.NODE_ENV === 'development' || useAuthStore.getState().user?.email?.includes('demo')) {
+            if (useAuthStore.getState().user?.email?.includes('demo')) {
                 set({
                     devices: [
                         { id: '1', name: 'Living Room Light', type: 'light', state: { on: true, brightness: 75 } },

@@ -32,16 +32,19 @@ async def detailed_healthcheck(
     
     # Check Supabase
     try:
-        # Prova a fare una query semplice
-        result = supabase.table("profiles").select("id").limit(1).execute()
+        # Prova a fare una query semplice su profili e tabelle core
+        supabase.table("profiles").select("id").limit(1).execute()
+        supabase.table("devices").select("id").limit(1).execute()
+        supabase.table("files").select("id").limit(1).execute()
+        
         health_status["services"]["supabase"] = {
             "status": "connected",
-            "message": "Supabase connection OK"
+            "message": "Supabase connection and core tables OK"
         }
     except Exception as e:
         health_status["services"]["supabase"] = {
             "status": "error",
-            "message": str(e)
+            "message": f"Table check failed: {str(e)}"
         }
         health_status["status"] = "degraded"
     

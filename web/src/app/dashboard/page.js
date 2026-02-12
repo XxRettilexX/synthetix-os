@@ -57,7 +57,14 @@ export default function Dashboard() {
                 <header className="flex justify-between items-center mb-8">
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-                        <p className="text-gray-500">Welcome back, {user.email}</p>
+                        <div className="flex items-center gap-2">
+                            <p className="text-gray-500">Welcome back, {user.email}</p>
+                            {user.email?.includes('demo') && (
+                                <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight border border-amber-200">
+                                    Demo Mode
+                                </span>
+                            )}
+                        </div>
                     </div>
                     <motion.button
                         whileHover={{ rotate: 180 }}
@@ -69,6 +76,30 @@ export default function Dashboard() {
                         <RefreshCw size={20} className={cn(loading && "animate-spin")} />
                     </motion.button>
                 </header>
+
+                {user.email?.includes('demo') && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="mb-8 p-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4"
+                    >
+                        <div className="flex items-center gap-4 text-center md:text-left">
+                            <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-amber-500 animate-pulse">
+                                <Thermometer className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h4 className="text-amber-900 font-bold tracking-tight">Viewing Demonstration Environment</h4>
+                                <p className="text-amber-600 text-sm font-medium">Real-time device control and history are simulated. Logout to connect your real devices.</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => { useAuthStore.getState().logout(); router.push('/login'); }}
+                            className="whitespace-nowrap px-6 py-2.5 bg-white border border-amber-200 text-amber-700 rounded-xl font-bold hover:bg-amber-50 transition-all shadow-sm active:scale-95"
+                        >
+                            Connect Real Devices
+                        </button>
+                    </motion.div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <AnimatePresence mode="popLayout">

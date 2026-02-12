@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { theme } from '../theme';
 
@@ -7,6 +8,7 @@ export default function RegisterScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const insets = useSafeAreaInsets();
     const { signUp } = useAuthStore();
 
     const handleRegister = async () => {
@@ -28,7 +30,7 @@ export default function RegisterScreen({ navigation }) {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.content}>
                 <Text style={styles.title}>Crea Account</Text>
                 <Text style={styles.subtitle}>Unisciti a Synthetix OS</Text>
@@ -52,17 +54,17 @@ export default function RegisterScreen({ navigation }) {
                         placeholder="********"
                         value={password}
                         onChangeText={setPassword}
-                        secureTextEntry
+                        secureTextEntry={true}
                     />
                 </View>
 
                 <TouchableOpacity
                     style={styles.button}
                     onPress={handleRegister}
-                    disabled={loading}
+                    disabled={!!loading}
                 >
                     {loading ? (
-                        <ActivityIndicator color="#fff" />
+                        <ActivityIndicator color="#fff" animating={true} />
                     ) : (
                         <Text style={styles.buttonText}>Registrati</Text>
                     )}
@@ -75,9 +77,10 @@ export default function RegisterScreen({ navigation }) {
                     <Text style={styles.linkText}>Hai già un account? Accedi</Text>
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </View>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {

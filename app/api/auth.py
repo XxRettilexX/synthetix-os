@@ -20,9 +20,13 @@ class UserRegister(BaseModel):
     full_name: Optional[str] = None
 
 
-class AuthResponse(BaseModel):
+class Session(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class AuthResponse(BaseModel):
+    session: Session
     user: dict
 
 
@@ -59,8 +63,10 @@ async def register(
             raise HTTPException(status_code=400, detail="Registration failed")
             
         return {
-            "access_token": auth_response.session.access_token,
-            "token_type": "bearer",
+            "session": {
+                "access_token": auth_response.session.access_token,
+                "token_type": "bearer"
+            },
             "user": {
                 "id": auth_response.user.id,
                 "email": auth_response.user.email,
@@ -92,8 +98,10 @@ async def login(
             raise HTTPException(status_code=401, detail="Invalid credentials")
             
         return {
-            "access_token": auth_response.session.access_token,
-            "token_type": "bearer",
+            "session": {
+                "access_token": auth_response.session.access_token,
+                "token_type": "bearer"
+            },
             "user": {
                 "id": auth_response.user.id,
                 "email": auth_response.user.email,

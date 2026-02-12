@@ -51,7 +51,7 @@ export const useAuthStore = create((set) => ({
             }
 
             const data = await res.json();
-            const session = { access_token: data.access_token };
+            const session = data.session;
             await AsyncStorage.setItem('synthetix-session', JSON.stringify(session));
             await AsyncStorage.setItem('synthetix-user', JSON.stringify(data.user));
 

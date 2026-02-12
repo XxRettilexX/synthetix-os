@@ -16,17 +16,17 @@ export const useDeviceStore = create((set, get) => ({
             set({ devices: data, isLoading: false });
         } catch (error) {
             console.error("fetchDevices error", error);
-            // Fallback a dati mock per test se API non raggiungibile
-            if (!error.response) {
+            // Fallback a dati mock solo per utenti demo
+            if (useAuthStore.getState().user?.email?.includes('demo')) {
                 set({
                     devices: [
-                        { id: 'mock-1', name: 'Luce Soggiorno', device_type: 'virtual_light', state: { on: false, brightness: 50 }, user_id: 'mock-user' },
-                        { id: 'mock-2', name: 'Termostato', device_type: 'iot', state: { temperature: 22.5 }, user_id: 'mock-user' }
+                        { id: 'mock-1', name: 'Luce Soggiorno (Demo)', device_type: 'virtual_light', state: { on: false, brightness: 50 }, user_id: 'mock-user' },
+                        { id: 'mock-2', name: 'Termostato (Demo)', device_type: 'iot', state: { temperature: 22.5 }, user_id: 'mock-user' }
                     ],
                     isLoading: false
                 });
             } else {
-                set({ error: error.message, isLoading: false });
+                set({ error: error.message, isLoading: false, devices: [] });
             }
         }
     },

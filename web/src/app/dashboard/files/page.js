@@ -12,7 +12,11 @@ import {
     Folder,
     ArrowLeft,
     Search,
-    Filter
+    Filter,
+    Eye,
+    X,
+    ImageIcon,
+    FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
@@ -25,6 +29,8 @@ export default function FileBrowser() {
     const [loading, setLoading] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [search, setSearch] = useState('')
+    const [previewFile, setPreviewFile] = useState(null)
+    const [previewUrl, setPreviewUrl] = useState(null)
 
     const getMockFiles = () => [
         { id: '1', name: 'Synthetix_Strategy_2026.pdf', size: 1024 * 500, mime_type: 'application/pdf', created_at: new Date().toISOString() },
@@ -44,16 +50,34 @@ export default function FileBrowser() {
                     'Authorization': `Bearer ${session.access_token}`
                 }
             })
+
+            console.log(`Fetch files status: ${res.status}`)
+
+            if (res.status === 401) {
+                alert("Session expired or invalid. Please login again.")
+                useAuthStore.getState().logout()
+                router.push('/login')
+                return
+            }
+
             if (!res.ok) {
-                console.warn('Files API returned error, using fallback data.')
-                setFiles(getMockFiles())
+                if (user?.email?.includes('demo')) {
+                    console.log("Using mock files (demo account)")
+                    setFiles(getMockFiles())
+                } else {
+                    setFiles([])
+                }
                 return
             }
             const data = await res.json()
-            setFiles(data)
+            setFiles(Array.isArray(data) ? data : [])
         } catch (e) {
             console.error('File fetch error:', e)
-            setFiles(getMockFiles())
+            if (user?.email?.includes('demo')) {
+                setFiles(getMockFiles())
+            } else {
+                setFiles([])
+            }
         } finally {
             setLoading(false)
         }
@@ -80,16 +104,24 @@ export default function FileBrowser() {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`
+                    // Non impostare Content-Type per FormData, lo fa il browser con il boundary
                 },
                 body: formData
             })
+
             if (res.ok) {
                 fetchFiles()
+            } else {
+                const errData = await res.json()
+                alert(`Upload failed: ${errData.detail || 'Unknown error'}`)
             }
         } catch (e) {
             console.error("Upload failed", e)
+            alert("Upload failed: Network error or server unreachable")
         } finally {
             setUploading(false)
+            // Reset input per permettere di caricare lo stesso file di nuovo
+            e.target.value = ''
         }
     }
 
@@ -104,6 +136,8 @@ export default function FileBrowser() {
             })
             if (res.ok) {
                 fetchFiles()
+            } else {
+                alert("Failed to delete file")
             }
         } catch (e) {
             console.error("Delete failed", e)
@@ -133,6 +167,28 @@ export default function FileBrowser() {
             console.error("Download failed", e)
             alert("Error downloading file")
         }
+    }
+
+    const handlePreview = async (file) => {
+        setPreviewFile(file)
+        if (file.mime_type?.startsWith('image/')) {
+            try {
+                const res = await fetch(`${API_URL}/files/${file.id}/download`, {
+                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                })
+                const blob = await res.blob()
+                const url = window.URL.createObjectURL(blob)
+                setPreviewUrl(url)
+            } catch (e) {
+                console.error("Preview failed", e)
+            }
+        }
+    }
+
+    const closePreview = () => {
+        if (previewUrl) window.URL.revokeObjectURL(previewUrl)
+        setPreviewFile(null)
+        setPreviewUrl(null)
     }
 
     const formatSize = (bytes) => {
@@ -179,13 +235,44 @@ export default function FileBrowser() {
                             />
                         </div>
 
-                        <label className="flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl font-bold cursor-pointer hover:bg-opacity-90 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95">
+                        <label className={cn(
+                            "flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold cursor-pointer transition-all shadow-lg active:scale-95",
+                            user.email?.includes('demo')
+                                ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
+                                : "bg-primary text-white hover:bg-opacity-90 shadow-primary/20 hover:shadow-primary/30"
+                        )}>
                             <Upload size={20} />
                             <span className="hidden sm:inline">Upload</span>
-                            <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+                            {!user.email?.includes('demo') && (
+                                <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+                            )}
                         </label>
                     </div>
                 </header>
+
+                {user.email?.includes('demo') && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-8 bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-center justify-between"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
+                                <Filter size={20} />
+                            </div>
+                            <div>
+                                <p className="text-amber-900 font-bold leading-none mb-1">Demo Mode Active</p>
+                                <p className="text-amber-600 text-sm font-medium">You are seeing mockup data. Connect to your real database to upload files.</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => { useAuthStore.getState().logout(); router.push('/login'); }}
+                            className="bg-white border border-amber-200 text-amber-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-amber-100 transition-colors shadow-sm"
+                        >
+                            Use Real Account
+                        </button>
+                    </motion.div>
+                )}
 
                 <AnimatePresence>
                     {uploading && (
@@ -255,8 +342,18 @@ export default function FileBrowser() {
                                                 <motion.button
                                                     whileHover={{ scale: 1.1 }}
                                                     whileTap={{ scale: 0.9 }}
+                                                    onClick={() => handlePreview(file)}
+                                                    className="p-2.5 text-gray-300 hover:text-primary transition-colors hover:bg-white hover:shadow-sm rounded-lg"
+                                                    title="Preview"
+                                                >
+                                                    <Eye size={18} />
+                                                </motion.button>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.1 }}
+                                                    whileTap={{ scale: 0.9 }}
                                                     onClick={() => handleDownload(file)}
                                                     className="p-2.5 text-gray-300 hover:text-primary transition-colors hover:bg-white hover:shadow-sm rounded-lg"
+                                                    title="Download"
                                                 >
                                                     <Download size={18} />
                                                 </motion.button>
@@ -265,6 +362,7 @@ export default function FileBrowser() {
                                                     whileTap={{ scale: 0.9 }}
                                                     onClick={() => deleteFile(file.id)}
                                                     className="p-2.5 text-gray-300 hover:text-error transition-colors hover:bg-white hover:shadow-sm rounded-lg"
+                                                    title="Delete"
                                                 >
                                                     <Trash2 size={18} />
                                                 </motion.button>
@@ -296,6 +394,95 @@ export default function FileBrowser() {
                     </table>
                 </div>
             </motion.main>
+
+            {/* Preview Modal */}
+            <AnimatePresence>
+                {previewFile && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                        onClick={closePreview}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                                        {previewFile.mime_type?.startsWith('image/') ? <ImageIcon size={20} /> : <FileText size={20} />}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-gray-900 truncate max-w-xs md:max-w-lg">{previewFile.name}</h3>
+                                        <p className="text-xs text-gray-400 font-medium">{formatSize(previewFile.size)} • {previewFile.mime_type}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={closePreview}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <X size={20} className="text-gray-400" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-auto p-4 bg-gray-50 flex items-center justify-center min-h-[300px]">
+                                {previewFile.mime_type?.startsWith('image/') ? (
+                                    previewUrl ? (
+                                        <img
+                                            src={previewUrl}
+                                            alt={previewFile.name}
+                                            className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg"
+                                        />
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-4 text-gray-400">
+                                            <RefreshCw className="animate-spin" size={32} />
+                                            <p className="text-sm font-medium">Loading preview...</p>
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="flex flex-col items-center gap-6 p-12 text-center">
+                                        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-sm">
+                                            <File size={40} className="text-gray-200" />
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-900 font-bold text-lg">Preview not available</p>
+                                            <p className="text-gray-500 max-w-xs">This file type cannot be previewed directly. You can download it to view the content.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => { handleDownload(previewFile); closePreview(); }}
+                                            className="bg-primary text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95 transition-all flex items-center gap-2"
+                                        >
+                                            <Download size={18} />
+                                            Download Now
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-6 border-t border-gray-100 bg-white flex justify-end gap-3">
+                                <button
+                                    onClick={closePreview}
+                                    className="px-6 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    onClick={() => handleDownload(previewFile)}
+                                    className="px-6 py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-opacity-90 transition-all flex items-center gap-2"
+                                >
+                                    <Download size={18} />
+                                    Download
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }

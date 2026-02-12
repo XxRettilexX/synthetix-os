@@ -6,11 +6,11 @@ import {
     StyleSheet,
     TouchableOpacity,
     RefreshControl,
-    SafeAreaView,
     ActivityIndicator,
     TextInput,
     Alert
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { theme } from '../theme';
 import apiClient from '../api/client';
@@ -21,11 +21,12 @@ export default function FileScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
+    const insets = useSafeAreaInsets();
 
     const fetchFiles = async () => {
         try {
             const { data } = await apiClient.get('/files/');
-            setFiles(data);
+            setFiles(Array.isArray(data) ? data : []);
         } catch (e) {
             console.error(e);
             // Mock data if API fails
@@ -84,9 +85,9 @@ export default function FileScreen() {
                 <Text style={styles.icon}>📄</Text>
             </View>
             <View style={styles.fileInfo}>
-                <Text style={styles.fileName} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.fileName} numberOfLines={1}>{item?.name}</Text>
                 <Text style={styles.fileMeta}>
-                    {formatSize(item.size)} • {new Date(item.created_at).toLocaleDateString()}
+                    {String(formatSize(item?.size || 0))} • {String(item?.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A')}
                 </Text>
             </View>
             <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.actionButton}>
@@ -95,10 +96,10 @@ export default function FileScreen() {
         </View>
     );
 
-    const filteredFiles = files.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+    const filteredFiles = files.filter(f => f?.name?.toLowerCase().includes(search.toLowerCase()));
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
                 <Text style={styles.title}>Cloud Explorer</Text>
                 <TouchableOpacity style={styles.uploadButton}>
@@ -124,12 +125,12 @@ export default function FileScreen() {
                 <FlatList
                     data={filteredFiles}
                     renderItem={renderFile}
-                    keyExtractor={item => item.id}
+                    keyExtractor={item => String(item.id)}
                     contentContainerStyle={styles.list}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl
-                            refreshing={refreshing}
+                            refreshing={!!refreshing}
                             onRefresh={() => { setRefreshing(true); fetchFiles(); }}
                             colors={[theme.colors.primary]}
                         />
@@ -145,7 +146,7 @@ export default function FileScreen() {
                     }
                 />
             )}
-        </SafeAreaView>
+        </View>
     );
 }
 

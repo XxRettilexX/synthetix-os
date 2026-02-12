@@ -4,26 +4,26 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/store'
 import { motion, AnimatePresence } from 'framer-motion'
-
 import Link from 'next/link'
 
-export default function LoginPage() {
+export default function RegisterPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [fullName, setFullName] = useState('')
     const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
-    const { login } = useAuthStore()
+    const { register } = useAuthStore()
 
-    const handleLogin = async (e) => {
+    const handleRegister = async (e) => {
         e.preventDefault()
         setError('')
         setIsLoading(true)
         try {
-            await login(email, password)
+            await register(email, password, fullName)
             router.push('/dashboard')
         } catch (e) {
-            setError('Invalid credentials or network error')
+            setError(e.message || 'Registration failed')
         } finally {
             setIsLoading(false)
         }
@@ -47,24 +47,36 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">Welcome Back</h1>
-                <p className="text-gray-500 text-center mb-10 font-medium">Log in to manage your Synthetix OS</p>
+                <h1 className="text-3xl font-extrabold mb-2 text-center text-gray-900 tracking-tight">Create Account</h1>
+                <p className="text-gray-500 text-center mb-10 font-medium">Join the Synthetix OS ecosystem</p>
 
-                <form onSubmit={handleLogin} className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700 ml-1">Email</label>
+                <form onSubmit={handleRegister} className="space-y-4">
+                    <div className="space-y-1">
+                        <label className="block text-xs font-bold text-gray-400 uppercase ml-1">Full Name</label>
+                        <motion.input
+                            whileFocus={{ scale: 1.01 }}
+                            type="text"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            placeholder="Mario Rossi"
+                            className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all placeholder:text-gray-300 font-medium"
+                            required
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="block text-xs font-bold text-gray-400 uppercase ml-1">Email address</label>
                         <motion.input
                             whileFocus={{ scale: 1.01 }}
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="vito@example.com"
+                            placeholder="mario@example.com"
                             className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all placeholder:text-gray-300 font-medium"
                             required
                         />
                     </div>
-                    <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700 ml-1">Password</label>
+                    <div className="space-y-1">
+                        <label className="block text-xs font-bold text-gray-400 uppercase ml-1">Password</label>
                         <motion.input
                             whileFocus={{ scale: 1.01 }}
                             type="password"
@@ -76,13 +88,13 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    <AnimatePresence>
+                    <AnimatePresence mode="wait">
                         {error && (
                             <motion.p
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="text-error text-xs text-center font-bold bg-error/5 py-3 rounded-xl"
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="text-error text-xs text-center font-bold bg-error/5 py-3 rounded-xl border border-error/10"
                             >
                                 {error}
                             </motion.p>
@@ -94,23 +106,20 @@ export default function LoginPage() {
                         whileTap={{ scale: 0.98 }}
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-shadow text-lg flex items-center justify-center gap-2"
+                        className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all text-lg flex items-center justify-center gap-2"
                     >
                         {isLoading ? (
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        ) : 'Sign In'}
+                        ) : 'Create Account'}
                     </motion.button>
                 </form>
 
-                <div className="mt-8 text-center space-y-4">
+                <div className="mt-8 text-center">
                     <p className="text-sm text-gray-500 font-medium">
-                        Don't have an account?{' '}
-                        <Link href="/register" className="text-primary font-bold hover:underline">
-                            Create Account
+                        Already have an account?{' '}
+                        <Link href="/login" className="text-primary font-bold hover:underline">
+                            Sign In
                         </Link>
-                    </p>
-                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider">
-                        Quick access: <span className="text-gray-600 underline cursor-help" title="Mocked local development mode">demo@example.com</span>
                     </p>
                 </div>
             </motion.div>
